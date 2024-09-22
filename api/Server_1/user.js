@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const app = express();
 const {INSERT, UPDATE, SELECT, DELETE, QUERY, SELECT_WHERE} = require('../../models/Server_1_DB');
+const {INSERT3, UPDATE3, SELECT3, DELETE3, QUERY3, SELECT_WHERE3} = require('../../models/Server_3_DB');
+
 const {SendMail} = require('../../include/NodemailerConfig');
 const {generateOtp} = require('../../include/OtpGen');
 const e = require('express');
@@ -107,7 +109,7 @@ router.post('/addtobill', async (req, res) => {
         // const price = req.body.price;
         const paid_unpaid = "unpaid";
 
-		const data_res = await QUERY(`SELECT * FROM package WHERE id = '${package_id}'`);
+		const data_res = await QUERY3(`SELECT * FROM package WHERE id = '${package_id}'`);
 		const { id, name, description, type, data_limit, voice_limit, sms_limit, price } = data_res[0];
 
 
@@ -178,82 +180,83 @@ router.post('/getAddedBillDetails', async (req, res) =>
 });
 
 
-router.post('/payTotal', async (req, res) => 
-{
-	try {
-		const user_id = req.body.user_id;
-		const paid_unpaid = 'unpaid';
-		const currency = 'LKR';
-		const confirm = 'success';
-	
-		const result = await QUERY(`SELECT * FROM user_bill WHERE user_id = '${user_id}' AND paid_unpaid = '${paid_unpaid}'`);
-	
-		if (result.length !== 0) 
+router.post('/payTotal', async (req, res) => {
+    try {
+        const user_id = req.body.user_id;
+        const paid_unpaid = 'unpaid';
+        const currency = 'LKR';
+        const confirm = 'success';
+
+        const result = await QUERY(`SELECT * FROM user_bill WHERE user_id = '${user_id}' AND paid_unpaid = '${paid_unpaid}'`);
+
+        if (result.length !== 0) 
 		{
-			const totalPrice = result.reduce((sum, row) => sum + parseFloat(row.price), 0);
-	
-			const paymentUpdate = await QUERY(`INSERT INTO payments(user_id, amount, currency, confirm) VALUES('${user_id}', '${totalPrice}', '${currency}', '${confirm}')`);
-	
-			if (paymentUpdate) 
+            const totalPrice = result.reduce((sum, row) => sum + parseFloat(row.price), 0);
+
+            const paymentUpdate = await QUERY(`INSERT INTO payments(user_id, amount, currency, confirm) VALUES('${user_id}', '${totalPrice}', '${currency}', '${confirm}')`);
+
+            if (paymentUpdate) 
 			{
-				const updateUserBill = await QUERY(`UPDATE user_bill SET paid_unpaid = 'paid' WHERE user_id = '${user_id}' AND paid_unpaid = 'unpaid'`);
-	
-				res.send({ result, totalPrice, message: 'Payment successful and user_bill updated to paid' });
-			} 
-			else 
-			{
-				res.send({ type: 'error', message: 'Payment failed' });
-			}
-		} 
-		else 
-		{
-			res.send({ type: 'error', message: 'No unpaid packages found for the user' });
-		}
-	} 
-	catch (error) 
-	{
-		res.send({ type: 'error', message: 'Internal server error' });
-	}
+                const updateUserBill = await QUERY(`UPDATE user_bill SET paid_unpaid = 'paid' WHERE user_id = '${user_id}' AND paid_unpaid = '${paid_unpaid}'`);
+                
+                if (updateUserBill.affectedRows > 0) 
+				{
+                    res.send({ result, totalPrice, message: 'Payment successful and user_bill updated to paid' });
+                } 
+				else 
+				{
+                    console.error('Failed to update user_bill. No rows affected.');
+                    res.send({ type: 'error', message: 'Payment inserted, but user_bill update failed. No matching records found.' });
+                }
+            } else {
+                res.send({ type: 'error', message: 'Payment failed' });
+            }
+        } else {
+            res.send({ type: 'error', message: 'No unpaid packages found for the user' });
+        }
+    } catch (error) {
+        res.send({ type: 'error', message: 'Internal server error' });
+    }
 });
+
 
 
 
 router.post('/paymentHistory', async (req, res) => 
 {
-	try{
-		const user_id = req.body.user_id;
-		if (!user_id) 
+    try {
+        const user_id = req.body.user_id;
+        if (!user_id) 
 		{
-			return res.send({ type: 'error', message: 'User ID is required' });
-		}
-	
-		const result1 = await QUERY(`SELECT * FROM user WHERE id = '${user_id}'`);
-		const result2 = await QUERY(`SELECT * FROM payments WHERE user_id = '${user_id}'`);
-	
-		if(result1.length != 0 && result2.length != 0)
+            return res.status(400).send({ type: 'error', message: 'User ID is required' });
+        }
+
+        const result1 = await QUERY(`SELECT * FROM user WHERE id = '${user_id}'`);
+        const result2 = await QUERY3(`SELECT * FROM payments WHERE user_id = '${user_id}'`);
+		console.log('Result2 (Payments Query):', result2);
+
+        if (result1.length !== 0 && result2.length !== 0) 
 		{
-			const userName = result1[0].user_name;
-			const userEmail = result1[0].email;
-	
-			const hitory = result2.map(payment =>(
-			{
-				amount: payment.amount,
-				currency: payment.currency,
-				confirms: payment.confirm,
-				date: payment.timestap
-			}));	
-			res.send({type: 'success', userName, userEmail, hitory});		
-		}
-		else
+            const userName = result1[0].user_name;
+            const userEmail = result1[0].email;
+
+            const history = result2.map(payment => ({
+                amount: payment.amount,
+                currency: payment.currency,
+                confirms: payment.confirm,
+                date: payment.timestap // Ensure this field is named correctly
+            }));
+
+            res.send({ type: 'success', userName, userEmail, history });
+        } 
+		else 
 		{
-			res.send({type: 'error', message: 'No payment history or User found'});
-		}
-	}
-	catch
+            res.send({ type: 'error', message: 'No payment history or User found' });
+        }
+    } catch (error) 
 	{
-		res.send({type: 'error', message: 'Internal server error'});
-	}
-	
+        res.send({ type: 'error', message: 'Internal server error' });
+    }
 });
 
 

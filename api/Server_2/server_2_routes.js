@@ -1,4 +1,6 @@
 const {INSERT, UPDATE, SELECT, DELETE, QUERY, SELECT_WHERE} = require('../../models/Server_2_DB');
+const {INSERT3, UPDATE3, SELECT3, DELETE3, QUERY3, SELECT_WHERE3} = require('../../models/Server_3_DB');
+
 const express = require('express');
 const router = express.Router();
 
@@ -15,26 +17,27 @@ router.post('/addpackage', async (req, res) => {
 
         console.log('Data received:', { PK_name, PK_des, PK_data, PK_voice, PK_sms, PK_price, PK_type });
 
-        const response = await QUERY(
+        const response = await QUERY3(
             `INSERT INTO package(name, description, type, data_limit, voice_limit, sms_limit, price) 
             VALUES('${PK_name}', '${PK_des}', '${PK_type}', ${parseFloat(PK_data)}, 
             ${parseInt(PK_voice)}, ${parseInt(PK_sms)}, ${parseInt(PK_price)})`
         );
         
-        console.log('Query response:', response);
-        res.send('success');
-    } catch (error) 
+        res.send({ type: 'success', message: 'Package added successfully', response });
+    } 
+    catch (error) 
     {
-        console.error('Error inserting package:', error);
-        res.status(500).send('Error adding package');
+        console.error('Error inserting package:', error);  // Log the actual error
+        res.status(500).send({ type: 'error', message: 'Error adding package', error: error.message });
     }
 });
+
 
 
 // ADMIN & USERS___________________________________________
 router.get('/getallpackages', async (req, res) => {
     try {
-        const response = await QUERY('SELECT * FROM package');
+        const response = await QUERY3('SELECT * FROM package');
         res.send(response);
     } catch (error) {
         console.error('Error fetching packages:', error);

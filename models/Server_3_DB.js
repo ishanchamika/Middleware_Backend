@@ -1,105 +1,77 @@
-const mysql = require('mysql');
-// const {INSERT, UPDATE, SELECT, DELETE} = require('./queries');
-// Create a connection pool to the MySQL database
-// INSERT('asdsa');
+const mysql = require('mysql2/promise');
+
 const pool = mysql.createPool({
-	// Adjust this value based on your requirements
-	host: 'localhost',
-	user: 'root',
-	password: '',
-	database: 'sritel_bill',
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'sritel_package',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
-async function INSERT(table, columns, values) {
-	return new Promise((resolve, reject) => {
-		pool.getConnection((err, connection) => {
-			if (err) {
-				reject(err);
-				return;
-			}
 
-			// Execute the query using the connection
-			connection.query('INSERT INTO ' + table + ' ' + columns + ' VALUES ' + values, (err, result, fields) => {
-				connection.release(); // Release the connection back to the pool
+async function INSERT3(table, columns, values) {
+    try {
+        const [result] = await pool.query(`INSERT INTO ${table} ${columns} VALUES ${values}`);
+        console.log(result);
+        return result;
+    } catch (err) {
+        console.error('Error executing INSERT query:', err);
+        throw err;
+    }
+}
 
-				if (err) {
-					reject(err);
-					return;
-				}
-				console.log(result);
-				resolve(JSON.parse(JSON.stringify(results)));
-			});
-		});
-	});
+async function UPDATE3(query) {
+    try {
+        const [result] = await pool.query(query);
+        console.log(result);
+        return result;
+    } catch (err) {
+        console.error('Error executing UPDATE query:', err);
+        throw err;
+    }
 }
-// const INSERT = async function (table, columns, values) {
-// 	pool.query('INSERT INTO ' + table + ' ' + columns + ' VALUES ' + values, function (err, result, fields) {
-// 		if (err) throw err;
-// 		return JSON.parse(JSON.stringify(result));
-// 		//console.log(JSON.parse(JSON.stringify(result)));
-// 	});
-// };
-const UPDATE = function (data) {
-	console.log(data);
-};
-const DELETE = function (data) {
-	console.log(data);
-};
-async function SELECT(table) {
-	return new Promise((resolve, reject) => {
-		pool.getConnection((err, connection) => {
-			if (err) {
-				reject(err);
-				return;
-			}
 
-			// Execute the query using the connection
-			connection.query('SELECT * FROM ' + table, (err, result, fields) => {
-				connection.release(); // Release the connection back to the pool
+async function DELETE3(query) {
+    try {
+        const [result] = await pool.query(query);
+        console.log(result);
+        return result;
+    } catch (err) {
+        console.error('Error executing DELETE query:', err);
+        throw err;
+    }
+}
 
-				if (err) {
-					reject(err);
-					return;
-				}
-				//console.log(result);
-				resolve(JSON.parse(JSON.stringify(result)));
-			});
-		});
-	});
+async function SELECT3(table) {
+    try {
+        const [rows] = await pool.query(`SELECT * FROM ${table}`);
+        return rows;
+    } catch (err) {
+        console.error('Error executing SELECT query:', err);
+        throw err;
+    }
 }
-async function SELECT_WHERE(table, column, value) {
-	return new Promise((resolve, reject) => {
-		pool.getConnection((err, connection) => {
-			if (err) {
-				reject(err);
-				return;
-			}
-			connection.query('SELECT * FROM ' + table + ' WHERE ' + column + "='" + value + "'", (err, result, fields) => {
-				connection.release();
-				if (err) {
-					reject(err);
-					return;
-				}
-				resolve(JSON.parse(JSON.stringify(result)));
-			});
-		});
-	});
+
+async function SELECT_WHERE3(table, column, value) {
+    try {
+        const [rows] = await pool.query(`SELECT * FROM ${table} WHERE ${column} = ?`, [value]);
+        return rows;
+    } catch (err) {
+        console.error('Error executing SELECT_WHERE query:', err);
+        throw err;
+    }
 }
-async function QUERY(query) {
-	return new Promise((resolve, reject) => {
-		pool.getConnection((err, connection) => {
-			if (err) {
-				reject(err);
-				return;
-			}
-			connection.query(query, (err, result, fields) => {
-				connection.release();
-				if (err) {
-					resolve('error');
-				} else {
-					resolve(JSON.parse(JSON.stringify(result)));
-				}
-			});
-		});
-	});
+
+async function QUERY3(query) 
+{
+    try {
+        const [result] = await pool.query(query);
+        return result;
+    } catch (err) {
+        console.error('Error executing QUERY:', err);
+        throw err;
+    }
 }
-module.exports = {INSERT, UPDATE, SELECT, DELETE, QUERY, SELECT_WHERE};
+
+module.exports = { INSERT3, UPDATE3, DELETE3, SELECT3, SELECT_WHERE3, QUERY3 };
